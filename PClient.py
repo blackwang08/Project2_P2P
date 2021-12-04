@@ -42,6 +42,7 @@ class PClient:
         """
         Start your code below!
         """
+        self.proxy.port
 
         pass
 

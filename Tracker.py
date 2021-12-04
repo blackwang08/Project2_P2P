@@ -37,13 +37,6 @@ class Tracker:
                 self.files[fid].append(client)
                 self.response("Success", frm)
 
-            # elif msg.startswith("QUERY:"):
-            #     # Client can use this to check who has the specific file with the given fid
-            #     fid = msg[6:]
-            #     result = []
-            #     for c in self.files[fid]:
-            #         result.append(c)
-            #     self.response("[%s]" % (", ".join(result)), frm)
             elif msg.startswith("DOWNLOAD:"):
                 # Client can use this to download the specific file with the given fid
                 fid = msg[9:]
