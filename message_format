@@ -1,2 +1,3 @@
 请求：方法区分的开头 + hash + port_num
 响应：返回 success
+hash 包含 搜索路径
