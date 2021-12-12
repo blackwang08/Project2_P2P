@@ -1,4 +1,9 @@
+from torrentPacket import torrentPacket
 from Proxy import Proxy
+from torrentData import torrentData
+
+ID_COUNT = 1
+netState = torrentData()
 
 
 class Tracker:
@@ -25,39 +30,27 @@ class Tracker:
         return self.proxy.recvfrom(timeout)
 
     def start(self):
+        global ID_COUNT
         while True:
             msg, frm = self.__recv__()
-            msg, client = msg.decode(), "(\"%s\", %d)" % frm
+            msg = msg.decode()
+            pkt = torrentPacket.parse_tcp_data(msg)
 
-            if msg.startswith("REGISTER:"):
-                # Client can use this to REGISTER a file and record it on the tracker
-                fid = msg[9:]
-                if fid not in self.files:
-                    self.files[fid] = []
-                self.files[fid].append(client)
-                self.response("Success", frm)
+            if pkt.type == 0:
+                if pkt.id == -1:
+                    netState.addPeer(ID_COUNT, frm[0], frm[1])
+                    for f in pkt.info.fileDict.keys():
+                        netState.addFile(f, pkt.info.fileDict[f]["filesize"])
+                        netState.peerAquireWholeFile(ID_COUNT, f)
+                    pkt.id = ID_COUNT
+                    ID_COUNT = ID_COUNT + 1
+                else:
+                    for f in pkt.info.fileDict.keys():
+                        netState.addFile(f, pkt.info.fileDict[f]["filesize"])
 
-            elif msg.startswith("DOWNLOAD:"):
-                # Client can use this to download the specific file with the given fid
-                fid = msg[9:]
-                result = []
-                for c in self.files[fid]:
-                    result.append(c)
-                self.response("[%s]" % (", ".join(result)), frm)
-
-            elif msg.startswith("CANCEL:"):
-                # Client can use this file to cancel the share of a file
-                fid = msg[7:]
-                if client in self.files[fid]:
-                    self.files[fid].remove(client)
-                self.response("Success", frm)
-
-            elif msg.startswith("CLOSE:"):
-                # Client can use this file to cancel the share of a file
-                fid = msg[6:]
-                for client in self.files[fid]:
-                    self.files[fid].remove(client)
-                self.response("Success", frm)
+                self.proxy.socket.sendall(torrentPacket.create_info(pkt.id, netState).get_tcp_data())
+            elif pkt.type == 1:
+                netState.removePeer(pkt.id)
 
     def response(self, data: str, address: (str, int)):
         self.__send__(data.encode(), address)
