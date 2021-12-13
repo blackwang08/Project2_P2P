@@ -6,30 +6,31 @@ class torrentData:
     def __init__(self):
 
         self.peerDict = {
-            # ID : [IP, PORT]
+            # ID : [IP, PORT, UPLOAD, DOWNLOAD]
         }
         self.fileDict = {
-            # "FILENAME": {"filesize" : FILESIZE(bytes), "totalchunks" : NUM_CHUNKS, "chunkDict" : {0 : [ID, ID, ...], 1 : [ID, ID, ...]}}
+            # "FILE HASH": { "filename" : FILE_NAME , "filesize" : FILESIZE(bytes), "totalchunks" : NUM_CHUNKS,
+            # "chunkDict" : {0 : [ID, ID, ...], 1 : [ID, ID, ...]}}
         }
 
     # adds file with no owned chunks
-    def addFile(self, name, size):
-        if name in self.fileDict.keys():
+    def addFile(self, hashname, filename , size):
+        if hashname in self.fileDict.keys():
             return False
 
         numChunks = -(-size // self.CHUNK_SIZE)
-        self.fileDict[name] = {"filesize": size, "totalchunks": numChunks, "chunkDict": {}}
-        for i in range(0, self.fileDict[name]["totalchunks"]):
-            self.fileDict[name]["chunkDict"][i] = []
+        self.fileDict[hashname] = { "filename" : filename ,"filesize": size, "totalchunks": numChunks, "chunkDict": {}}
+        for i in range(0, self.fileDict[hashname]["totalchunks"]):
+            self.fileDict[hashname]["chunkDict"][i] = []
         return True
 
     # use fileDict.pop("filename") if ever needed
 
     # adds to known peers, but does not inform on owned chunks
-    def addPeer(self, pid, ip, port):
+    def addPeer(self, pid, ip, port, upload, download):
         if pid in self.peerDict.keys():
             return False  # no duplicate
-        self.peerDict[pid] = [ip, port]
+        self.peerDict[pid] = [ip, port, upload, download]
         return True
 
     # removes from peerDict and removes from chunkDicts
@@ -45,27 +46,27 @@ class torrentData:
         return True
 
     # peer obtains single chunk of file
-    def peerAquireFileChunk(self, pid, filename, chunk):
+    def peerAquireFileChunk(self, pid, hashname, chunk):
         if pid not in self.peerDict.keys():
             return False  # pid not registered
-        if filename not in self.fileDict.keys():
+        if hashname not in self.fileDict.keys():
             return False  # non existance file to own
-        if chunk >= self.fileDict[filename]["totalchunks"]:
+        if chunk >= self.fileDict[hashname]["totalchunks"]:
             return False  # non-existant chunk
         # chunk has been registered
-        if chunk in self.fileDict[filename]["chunkDict"]:
-            if pid in self.fileDict[filename]["chunkDict"][chunk]:
+        if chunk in self.fileDict[hashname]["chunkDict"]:
+            if pid in self.fileDict[hashname]["chunkDict"][chunk]:
                 return False  # already owns
 
-        self.fileDict[filename]["chunkDict"][chunk].append(pid)
+        self.fileDict[hashname]["chunkDict"][chunk].append(pid)
         return True
 
     # peer obtains all chunks of file (when they first connect)
-    def peerAquireWholeFile(self, pid, filename):
+    def peerAquireWholeFile(self, pid, hashname):
         if pid not in self.peerDict.keys():
             return False
-        if filename not in self.fileDict.keys():
+        if hashname not in self.fileDict.keys():
             return False
-        for c in range(0, self.fileDict[filename]["totalchunks"]):
-            self.peerAquireFileChunk(pid, filename, c)
+        for c in range(0, self.fileDict[hashname]["totalchunks"]):
+            self.peerAquireFileChunk(pid, hashname, c)
         return True
