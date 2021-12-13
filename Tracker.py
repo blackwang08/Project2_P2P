@@ -38,18 +38,18 @@ class Tracker:
 
             if pkt.type == 0:
                 if pkt.id == -1:
-                    netState.addPeer(ID_COUNT, frm[0], frm[1])
+                    netState.addPeer(ID_COUNT, frm[0], frm[1], pkt.data[0], pkt.data[1])
                     for f in pkt.info.fileDict.keys():
-                        netState.addFile(f, pkt.info.fileDict[f]["filesize"])
+                        netState.addFile(f, pkt.info.fileDict[f]["FILE_NAME"], pkt.info.fileDict[f]["filesize"])
                         netState.peerAquireWholeFile(ID_COUNT, f)
                     pkt.id = ID_COUNT
                     ID_COUNT = ID_COUNT + 1
                 else:
                     for f in pkt.info.fileDict.keys():
-                        netState.addFile(f, pkt.info.fileDict[f]["filesize"])
+                        netState.addFile(f, pkt.info.fileDict[f]["FILE_NAME"], pkt.info.fileDict[f]["filesize"])
                         # f —> hashname filesize->FILE_NAME
 
-                self.proxy.socket.sendall(torrentPacket.create_info(pkt.id, netState).get_tcp_data())
+                self.__send__(torrentPacket.create_info(pkt.id, netState).get_tcp_data(), frm)
             elif pkt.type == 1:
                 netState.removePeer(pkt.id)
 
