@@ -47,6 +47,7 @@ class Tracker:
                 else:
                     for f in pkt.info.fileDict.keys():
                         netState.addFile(f, pkt.info.fileDict[f]["filesize"])
+                        # f —> hashname filesize->FILE_NAME
 
                 self.proxy.socket.sendall(torrentPacket.create_info(pkt.id, netState).get_tcp_data())
             elif pkt.type == 1:
